@@ -63,29 +63,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gh \
     # Other stuff
     asciinema \
+    libnotify-bin \
+    emacs \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# =============================================================================
-# Python Setup (with uv for fast package management)
-# =============================================================================
-# Install uv (fast Python package manager)
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.local/bin:$PATH"
-
-# Create symlinks for convenience
-RUN ln -sf /usr/bin/python3 /usr/bin/python && \
-    ln -sf /usr/bin/pip3 /usr/bin/pip
-
-# Install common Python tools globally
-RUN pip install --break-system-packages \
-    pipx \
-    poetry \
-    black \
-    ruff \
-    mypy \
-    pytest \
-    httpx \
-    rich
 
 # =============================================================================
 # Go Setup (optional - comment out if not needed)
@@ -117,16 +97,40 @@ RUN mkdir -p /usr/local/share/npm-global && \
     chown -R node:node /usr/local/share
 
 # =============================================================================
+# Python Setup (with uv for fast package management)
+# =============================================================================
+# Install uv (fast Python package manager)
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:$PATH"
+
+# Create symlinks for convenience
+RUN ln -sf /usr/bin/python3 /usr/bin/python && \
+    ln -sf /usr/bin/pip3 /usr/bin/pip
+
+# Install common Python tools globally
+RUN pip install --break-system-packages \
+    pipx \
+    poetry \
+    black \
+    ruff \
+    mypy \
+    pytest \
+    httpx \
+    rich \
+    pyright
+
+# =============================================================================
 # User Configuration
 # =============================================================================
-# ARG USERNAME=node
-# ARG USER_UID=1000
-# ARG USER_GID=1000
+ARG USERNAME=node
+ARG USER_UID=1000
+ARG USER_GID=1000
 
 # Persist bash history
 RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" \
     && mkdir -p /commandhistory \
-    && touch /commandhistory/.bash_history
+    && touch /commandhistory/.bash_history \
+    && chown -R $USERNAME:$USERNAME /commandhistory
 
 # =============================================================================
 # Environment Variables
@@ -139,6 +143,7 @@ ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 # Claude configuration
 ENV CLAUDE_CONFIG_DIR="/home/node/.claude"
+ENV ENABLE_LSP_TOOLS=1
 
 # =============================================================================
 # Install Claude Code
@@ -156,16 +161,16 @@ RUN chmod +x /usr/local/bin/init-firewall.sh && \
 # =============================================================================
 # Workspace Setup
 # =============================================================================
-RUN mkdir -p /workspace # && chown -R $USERNAME:$USERNAME /workspace
-RUN mkdir -p /home/node/.claude # && chown -R $USERNAME:$USERNAME /home/node/.claude
-RUN mkdir -p /home/node/go # && chown -R $USERNAME:$USERNAME /home/node/go
+RUN mkdir -p /workspace && chown -R $USERNAME:$USERNAME /workspace
+RUN mkdir -p /home/node/.claude && chown -R $USERNAME:$USERNAME /home/node/.claude
+RUN mkdir -p /home/node/go && chown -R $USERNAME:$USERNAME /home/node/go
 
 # Give node user sudo access (optional - remove for tighter security)
-RUN echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+# RUN echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 WORKDIR /workspace
 
-RUN echo 'alias claude="claude --dangerously-skip-permissions"' >> /home/node/.bashrc
+USER $USERNAME
 
 SHELL ["/bin/bash", "-c"]
 
