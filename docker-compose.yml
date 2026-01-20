@@ -1,0 +1,95 @@
+# =============================================================================
+# Docker Compose for Claude Code Container
+# =============================================================================
+# Usage:
+#   docker compose up -d        # Start container in background
+#   docker compose exec claude zsh  # Open shell in container
+#   docker compose down         # Stop and remove container
+# =============================================================================
+
+services:
+  claude:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        TZ: ${TZ:-UTC}
+        CLAUDE_CODE_VERSION: ${CLAUDE_CODE_VERSION:-latest}
+        PYTHON_VERSION: ${PYTHON_VERSION:-3.13}
+        GO_VERSION: ${GO_VERSION:-1.23.5}
+    
+    container_name: claude-code
+    hostname: claude-code
+    
+    # Interactive terminal
+    stdin_open: true
+    tty: true
+
+    # Required to allow DBus notifications
+    security_opt:
+      - apparmor:unconfined
+      
+    # Security capabilities for firewall
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    
+    # Environment variables
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - NODE_OPTIONS=--max-old-space-size=4096
+      - CLAUDE_CONFIG_DIR=/home/node/.claude
+      - TZ=${TZ:-UTC}
+
+      # Get notifications
+      - DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+      - XDG_RUNTIME_DIR=/run/user/1000
+      - WAYLAND_DISPLAY=${WAYLAND_DISPLAY}
+
+      # Use emacsclient
+      - EDITOR=emacs
+
+    # Volume mounts
+    volumes:
+      # Your project workspace - mount your code here
+      - ${PWD}:/workspace
+      
+      # Persist Claude configuration between container restarts
+      - claude-config:/home/node/.claude
+      
+      # Persist command history
+      - claude-history:/commandhistory
+      
+      # Optional: Mount your SSH keys for git operations (read-only)
+      # - ${HOME}/.ssh:/home/node/.ssh:ro
+      
+      # Optional: Mount your git config (read-only)
+      # - ${HOME}/.gitconfig:/home/node/.gitconfig:ro
+
+      # Required for notifications
+      - /run/user/1000:/run/user/1000
+      - ${XDG_RUNTIME_DIR}/wayland-1:/run/user/1000/wayland-1
+
+    # Working directory
+    working_dir: /workspace
+
+    userns_mode: host
+    
+    # Keep container running
+    # command: sleep infinity
+    
+    # Resource limits (adjust as needed)
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          memory: 2G
+
+# Named volumes for persistence
+volumes:
+  claude-config:
+    name: claude-code-config
+  claude-history:
+    name: claude-code-history
