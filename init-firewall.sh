@@ -60,6 +60,8 @@ ALLOWED_DOMAINS=(
     # "docker.io"
     # "ghcr.io"
     # "quay.io"
+    "docs.anthropic.com"
+    "code.claude.com"
 )
 
 # =============================================================================
