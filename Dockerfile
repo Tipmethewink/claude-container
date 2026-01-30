@@ -140,6 +140,7 @@ RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhisto
 # =============================================================================
 # Environment Variables
 # =============================================================================
+ENV PATH="/home/mark/.local/bin:$PATH"
 ENV DEVCONTAINER=true
 ENV SHELL=/bin/bash
 
@@ -149,11 +150,6 @@ ENV NODE_OPTIONS="--max-old-space-size=4096"
 # Claude configuration
 ENV CLAUDE_CONFIG_DIR="/home/mark/.claude"
 ENV ENABLE_LSP_TOOLS=1
-
-# =============================================================================
-# Install Claude Code (using native installer)
-# =============================================================================
-RUN curl -fsSL https://claude.ai/install.sh | bash
 
 # =============================================================================
 # Firewall Script (for network isolation)
@@ -173,6 +169,11 @@ RUN mkdir -p /home/mark/go && chown -R $USERNAME:$USERNAME /home/mark/go
 # RUN echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 USER $USERNAME
+
+# =============================================================================
+# Install Claude Code (using native installer, as user)
+# =============================================================================
+RUN curl -fsSL https://claude.ai/install.sh | bash
 
 SHELL ["/bin/bash", "-c"]
 

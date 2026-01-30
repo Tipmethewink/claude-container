@@ -14,7 +14,6 @@ services:
       dockerfile: Dockerfile
       args:
         TZ: ${TZ:-UTC}
-        CLAUDE_CODE_VERSION: ${CLAUDE_CODE_VERSION:-latest}
         PYTHON_VERSION: ${PYTHON_VERSION:-3.13}
         GO_VERSION: ${GO_VERSION:-1.23.5}
     
@@ -42,6 +41,7 @@ services:
       - CLAUDE_CONFIG_DIR=/home/mark/.claude
       - TZ=${TZ:-UTC}
       - HOME=/home/mark
+      - TERM=${TERM:-xterm-256color}
 
       # Get notifications
       - DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
@@ -70,6 +70,9 @@ services:
 
       # Required for notifications
       - /run/user/1000:/run/user/1000
+
+      # Share machine ID to prevent re-onboarding
+      - /etc/machine-id:/etc/machine-id:ro
       - ${XDG_RUNTIME_DIR}/wayland-1:/run/user/1000/wayland-1
 
     # Working directory - same as host
