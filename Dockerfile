@@ -8,7 +8,6 @@ FROM node:20-bookworm
 
 # Build arguments for customization
 ARG TZ=UTC
-ARG CLAUDE_CODE_VERSION=latest
 ARG PYTHON_VERSION=3.13
 ARG GO_VERSION=1.23.5
 ARG RUST_VERSION=stable
@@ -152,9 +151,9 @@ ENV CLAUDE_CONFIG_DIR="/home/mark/.claude"
 ENV ENABLE_LSP_TOOLS=1
 
 # =============================================================================
-# Install Claude Code
+# Install Claude Code (using native installer)
 # =============================================================================
-RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
+RUN curl -fsSL https://claude.ai/install.sh | bash
 
 # =============================================================================
 # Firewall Script (for network isolation)
