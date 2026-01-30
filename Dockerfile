@@ -75,7 +75,7 @@ RUN curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-$(dpkg --print-architect
     rm /tmp/go.tar.gz
 
 ENV PATH="/usr/local/go/bin:$PATH"
-ENV GOPATH="/home/node/go"
+ENV GOPATH="/home/mark/go"
 ENV PATH="${GOPATH}/bin:$PATH"
 
 # =============================================================================
@@ -122,9 +122,15 @@ RUN pip install --break-system-packages \
 # =============================================================================
 # User Configuration
 # =============================================================================
-ARG USERNAME=node
+ARG USERNAME=mark
 ARG USER_UID=1000
 ARG USER_GID=1000
+
+# Create user "mark" (the base image has "node" with UID 1000, so we rename it)
+RUN usermod -l ${USERNAME} node && \
+    groupmod -n ${USERNAME} node && \
+    usermod -d /home/${USERNAME} -m ${USERNAME} && \
+    sed -i "s|/home/node|/home/${USERNAME}|g" /etc/passwd
 
 # Persist bash history
 RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" \
@@ -142,7 +148,7 @@ ENV SHELL=/bin/bash
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 # Claude configuration
-ENV CLAUDE_CONFIG_DIR="/home/node/.claude"
+ENV CLAUDE_CONFIG_DIR="/home/mark/.claude"
 ENV ENABLE_LSP_TOOLS=1
 
 # =============================================================================
@@ -155,20 +161,17 @@ RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 # =============================================================================
 COPY init-firewall.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/init-firewall.sh && \
-    echo "node ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh" > /etc/sudoers.d/node-firewall && \
-    chmod 0440 /etc/sudoers.d/node-firewall
+    echo "mark ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh" > /etc/sudoers.d/mark-firewall && \
+    chmod 0440 /etc/sudoers.d/mark-firewall
 
 # =============================================================================
 # Workspace Setup
 # =============================================================================
-RUN mkdir -p /workspace && chown -R $USERNAME:$USERNAME /workspace
-RUN mkdir -p /home/node/.claude && chown -R $USERNAME:$USERNAME /home/node/.claude
-RUN mkdir -p /home/node/go && chown -R $USERNAME:$USERNAME /home/node/go
+RUN mkdir -p /home/mark/.claude && chown -R $USERNAME:$USERNAME /home/mark/.claude
+RUN mkdir -p /home/mark/go && chown -R $USERNAME:$USERNAME /home/mark/go
 
-# Give node user sudo access (optional - remove for tighter security)
+# Give mark user sudo access (optional - remove for tighter security)
 # RUN echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-
-WORKDIR /workspace
 
 USER $USERNAME
 

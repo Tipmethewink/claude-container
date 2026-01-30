@@ -39,8 +39,9 @@ services:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - GITHUB_TOKEN=${GITHUB_TOKEN:-}
       - NODE_OPTIONS=--max-old-space-size=4096
-      - CLAUDE_CONFIG_DIR=/home/node/.claude
+      - CLAUDE_CONFIG_DIR=/home/mark/.claude
       - TZ=${TZ:-UTC}
+      - HOME=/home/mark
 
       # Get notifications
       - DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
@@ -52,27 +53,27 @@ services:
 
     # Volume mounts
     volumes:
-      # Your project workspace - mount your code here
-      - ${PWD}:/workspace
-      
+      # Your project workspace - mount to same path as host
+      - ${PWD}:${PWD}
+
       # Persist Claude configuration between container restarts
-      - claude-config:/home/node/.claude
-      
+      - ${HOME}/.claude:/home/mark/.claude
+
       # Persist command history
       - claude-history:/commandhistory
-      
+
       # Optional: Mount your SSH keys for git operations (read-only)
-      # - ${HOME}/.ssh:/home/node/.ssh:ro
-      
+      - ${HOME}/.ssh:/home/mark/.ssh:ro
+
       # Optional: Mount your git config (read-only)
-      # - ${HOME}/.gitconfig:/home/node/.gitconfig:ro
+      - ${HOME}/.gitconfig:/home/mark/.gitconfig:ro
 
       # Required for notifications
       - /run/user/1000:/run/user/1000
       - ${XDG_RUNTIME_DIR}/wayland-1:/run/user/1000/wayland-1
 
-    # Working directory
-    working_dir: /workspace
+    # Working directory - same as host
+    working_dir: ${PWD}
 
     userns_mode: host
     
@@ -89,7 +90,7 @@ services:
 
 # Named volumes for persistence
 volumes:
-  claude-config:
-    name: claude-code-config
+#  claude-config:
+#    name: claude-code-config
   claude-history:
     name: claude-code-history
