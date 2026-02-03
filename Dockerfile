@@ -74,8 +74,6 @@ RUN curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-$(dpkg --print-architect
     rm /tmp/go.tar.gz
 
 ENV PATH="/usr/local/go/bin:$PATH"
-ENV GOPATH="/home/mark/go"
-ENV PATH="${GOPATH}/bin:$PATH"
 
 # =============================================================================
 # Rust Setup (optional - comment out if not needed)
@@ -125,7 +123,14 @@ ARG USERNAME=mark
 ARG USER_UID=1000
 ARG USER_GID=1000
 
-# Create user "mark" (the base image has "node" with UID 1000, so we rename it)
+# Define user home directory
+ENV USER_HOME=/home/${USERNAME}
+
+# Set Go path now that we know the username
+ENV GOPATH="${USER_HOME}/go"
+ENV PATH="${GOPATH}/bin:$PATH"
+
+# Create user (the base image has "node" with UID 1000, so we rename it)
 RUN usermod -l ${USERNAME} node && \
     groupmod -n ${USERNAME} node && \
     usermod -d /home/${USERNAME} -m ${USERNAME} && \
@@ -140,7 +145,7 @@ RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhisto
 # =============================================================================
 # Environment Variables
 # =============================================================================
-ENV PATH="/home/mark/.local/bin:$PATH"
+ENV PATH="${USER_HOME}/.local/bin:$PATH"
 ENV DEVCONTAINER=true
 ENV SHELL=/bin/bash
 
@@ -148,7 +153,7 @@ ENV SHELL=/bin/bash
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 # Claude configuration
-ENV CLAUDE_CONFIG_DIR="/home/mark/.claude"
+ENV CLAUDE_CONFIG_DIR="${USER_HOME}/.claude"
 ENV ENABLE_LSP_TOOLS=1
 
 # =============================================================================
@@ -156,16 +161,16 @@ ENV ENABLE_LSP_TOOLS=1
 # =============================================================================
 COPY init-firewall.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/init-firewall.sh && \
-    echo "mark ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh" > /etc/sudoers.d/mark-firewall && \
-    chmod 0440 /etc/sudoers.d/mark-firewall
+    echo "${USERNAME} ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh" > /etc/sudoers.d/${USERNAME}-firewall && \
+    chmod 0440 /etc/sudoers.d/${USERNAME}-firewall
 
 # =============================================================================
 # Workspace Setup
 # =============================================================================
-RUN mkdir -p /home/mark/.claude && chown -R $USERNAME:$USERNAME /home/mark/.claude
-RUN mkdir -p /home/mark/go && chown -R $USERNAME:$USERNAME /home/mark/go
+RUN mkdir -p ${USER_HOME}/.claude && chown -R $USERNAME:$USERNAME ${USER_HOME}/.claude
+RUN mkdir -p ${USER_HOME}/go && chown -R $USERNAME:$USERNAME ${USER_HOME}/go
 
-# Give mark user sudo access (optional - remove for tighter security)
+# Give user sudo access (optional - remove for tighter security)
 # RUN echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 USER $USERNAME

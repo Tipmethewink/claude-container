@@ -5,7 +5,15 @@
 #   docker compose up -d        # Start container in background
 #   docker compose exec claude zsh  # Open shell in container
 #   docker compose down         # Stop and remove container
+#
+# Configuration:
+#   CONTAINER_USER - Username inside container (default: mark)
+#   Set in .env file or export before running docker compose
 # =============================================================================
+
+# Default value for container username
+x-container-user: &container-user ${CONTAINER_USER:-mark}
+x-container-home: &container-home /home/${CONTAINER_USER:-mark}
 
 services:
   claude:
@@ -16,6 +24,7 @@ services:
         TZ: ${TZ:-UTC}
         PYTHON_VERSION: ${PYTHON_VERSION:-3.13}
         GO_VERSION: ${GO_VERSION:-1.23.5}
+        USERNAME: *container-user
     
     container_name: claude-code
     hostname: claude-code
@@ -38,9 +47,9 @@ services:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - GITHUB_TOKEN=${GITHUB_TOKEN:-}
       - NODE_OPTIONS=--max-old-space-size=4096
-      - CLAUDE_CONFIG_DIR=/home/mark/.claude
+      - CLAUDE_CONFIG_DIR=/home/${CONTAINER_USER:-mark}/.claude
       - TZ=${TZ:-UTC}
-      - HOME=/home/mark
+      - HOME=/home/${CONTAINER_USER:-mark}
       - TERM=${TERM:-xterm-256color}
 
       # Get notifications
@@ -57,16 +66,16 @@ services:
       - ${PWD}:${PWD}
 
       # Persist Claude configuration between container restarts
-      - ${HOME}/.claude:/home/mark/.claude
+      - ${HOME}/.claude:/home/${CONTAINER_USER:-mark}/.claude
 
       # Persist command history
       - claude-history:/commandhistory
 
       # Optional: Mount your SSH keys for git operations (read-only)
-      - ${HOME}/.ssh:/home/mark/.ssh:ro
+      - ${HOME}/.ssh:/home/${CONTAINER_USER:-mark}/.ssh:ro
 
       # Optional: Mount your git config (read-only)
-      - ${HOME}/.gitconfig:/home/mark/.gitconfig:ro
+      - ${HOME}/.gitconfig:/home/${CONTAINER_USER:-mark}/.gitconfig:ro
 
       # Required for notifications
       - /run/user/1000:/run/user/1000
