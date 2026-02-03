@@ -72,18 +72,6 @@ docker run -it \
 claude --dangerously-skip-permissions
 ```
 
-## Available Dockerfiles
-
-| File | Description | Size |
-|------|-------------|------|
-| `Dockerfile` | Full version with Python, Go, Rust | ~2.5GB |
-| `Dockerfile.slim` | Lightweight Python-only version | ~1.2GB |
-
-To use the slim version:
-```bash
-docker build -f Dockerfile.slim -t claude-code-slim .
-```
-
 ## Configuration
 
 ### Environment Variables
