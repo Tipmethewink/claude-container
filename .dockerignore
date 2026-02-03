@@ -1,0 +1,42 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env files with secrets
+.env
+.env.local
+.env.*.local
+
+# Node
+node_modules
+npm-debug.log
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+.venv
+venv
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# Build artifacts
+dist
+build
+*.egg-info
+
+# Documentation
+*.md
+!README.md
+LICENSE
