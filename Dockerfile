@@ -64,6 +64,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     asciinema \
     libnotify-bin \
     emacs \
+    # YubiKey support
+    pcscd \
+    libpcsclite1 \
+    libccid \
+    scdaemon \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # =============================================================================
@@ -143,6 +148,13 @@ RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhisto
     && chown -R $USERNAME:$USERNAME /commandhistory
 
 # =============================================================================
+# glab Setup (optional - comment out if not needed) - requires GOPATH
+# =============================================================================
+RUN git clone https://gitlab.com/gitlab-org/cli.git && \
+    make -C cli build && \
+    make -C cli install
+
+# =============================================================================
 # Environment Variables
 # =============================================================================
 ENV PATH="${USER_HOME}/.local/bin:$PATH"
@@ -169,6 +181,11 @@ RUN chmod +x /usr/local/bin/init-firewall.sh && \
 # =============================================================================
 RUN mkdir -p ${USER_HOME}/.claude && chown -R $USERNAME:$USERNAME ${USER_HOME}/.claude
 RUN mkdir -p ${USER_HOME}/go && chown -R $USERNAME:$USERNAME ${USER_HOME}/go
+
+# Disable Ctrl+Z (SIGTSTP) inside the container - it just suspends the
+# foreground process with nowhere useful to go. Use Docker's detach keys
+# (Ctrl+P, Ctrl+Q) or a terminal multiplexer to background instead.
+RUN echo "trap '' TSTP" >> ${USER_HOME}/.bashrc
 
 # Give user sudo access (optional - remove for tighter security)
 # RUN echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
