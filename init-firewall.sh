@@ -62,6 +62,9 @@ ALLOWED_DOMAINS=(
     # "quay.io"
     "docs.anthropic.com"
     "code.claude.com"
+
+    # Quest DB
+    "questdb.com"
 )
 
 # =============================================================================
@@ -127,6 +130,13 @@ ipset add allowed_ips 172.17.0.0/16 2>/dev/null || true
 # Docker compose networks (common range)
 ipset add allowed_ips 172.18.0.0/16 2>/dev/null || true
 ipset add allowed_ips 172.19.0.0/16 2>/dev/null || true
+
+# Host gateway (for host.docker.internal access)
+HOST_GW=$(ip route | awk '/default/ {print $3}')
+if [[ -n "$HOST_GW" ]]; then
+    ipset add allowed_ips "$HOST_GW" 2>/dev/null || true
+    log_info "  Added host gateway $HOST_GW"
+fi
 
 # =============================================================================
 # Configure iptables rules

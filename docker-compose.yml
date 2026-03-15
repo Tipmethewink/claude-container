@@ -41,11 +41,20 @@ services:
     cap_add:
       - NET_ADMIN
       - NET_RAW
+
+    # USB device access for YubiKey
+    devices:
+      - /dev/bus/usb:/dev/bus/usb
     
+    # Map host.docker.internal to host gateway IP
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
     # Environment variables
     environment:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - GITLAB_TOKEN=${GITLAB_TOKEN:-}
       - NODE_OPTIONS=--max-old-space-size=4096
       - CLAUDE_CONFIG_DIR=/home/${CONTAINER_USER:-mark}/.claude
       - TZ=${TZ:-UTC}
@@ -57,6 +66,9 @@ services:
       - XDG_RUNTIME_DIR=/run/user/1000
       - WAYLAND_DISPLAY=${WAYLAND_DISPLAY}
 
+      # Host port for accessing host services (e.g. dev servers)
+      - HOST_PORT=${HOST_PORT:-}
+
       # Use emacsclient
       - EDITOR=emacs
 
@@ -64,6 +76,7 @@ services:
     volumes:
       # Your project workspace - mount to same path as host
       - ${PWD}:${PWD}
+      - ${HOME}/git/root:${HOME}/git/root
 
       # Persist Claude configuration between container restarts
       - ${HOME}/.claude:/home/${CONTAINER_USER:-mark}/.claude
@@ -83,6 +96,9 @@ services:
       # Share machine ID to prevent re-onboarding
       - /etc/machine-id:/etc/machine-id:ro
       - ${XDG_RUNTIME_DIR}/wayland-1:/run/user/1000/wayland-1
+
+      # YubiKey: Share host pcscd socket for smart card operations (GPG, PIV)
+      - /run/pcscd/pcscd.comm:/run/pcscd/pcscd.comm
 
     # Working directory - same as host
     working_dir: ${PWD}
