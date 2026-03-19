@@ -80,6 +80,14 @@ RUN curl -fsSL https://dl.google.com/linux/direct/google-chrome-stable_current_a
     rm /tmp/chrome.deb && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Wrap Chrome binary to add --no-sandbox (required in Docker where
+# unprivileged user namespaces are restricted). Playwright MCP launches
+# /opt/google/chrome/chrome directly, so this wrapper is transparent.
+RUN mv /opt/google/chrome/chrome /opt/google/chrome/chrome.real && \
+    printf '#!/bin/bash\nexec /opt/google/chrome/chrome.real --no-sandbox "$@"\n' \
+      > /opt/google/chrome/chrome && \
+    chmod +x /opt/google/chrome/chrome
+
 # =============================================================================
 # Go Setup (optional - comment out if not needed)
 # =============================================================================
