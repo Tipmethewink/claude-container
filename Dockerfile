@@ -72,6 +72,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # =============================================================================
+# Google Chrome (for Playwright MCP server)
+# =============================================================================
+RUN curl -fsSL https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -o /tmp/chrome.deb && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends /tmp/chrome.deb && \
+    rm /tmp/chrome.deb && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# =============================================================================
 # Go Setup (optional - comment out if not needed)
 # =============================================================================
 RUN curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-$(dpkg --print-architecture).tar.gz" -o /tmp/go.tar.gz && \
