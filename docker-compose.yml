@@ -100,6 +100,10 @@ services:
       # YubiKey: Share host pcscd socket for smart card operations (GPG, PIV)
       - /run/pcscd/pcscd.comm:/run/pcscd/pcscd.comm
 
+      # Persist Claude Code installation between container rebuilds
+      - claude-install:/home/${CONTAINER_USER:-mark}/.local/share/claude
+      - claude-bin:/home/${CONTAINER_USER:-mark}/.local/bin
+
     # Working directory - same as host
     working_dir: ${PWD}
 
@@ -122,3 +126,7 @@ volumes:
 #    name: claude-code-config
   claude-history:
     name: claude-code-history
+  claude-install:
+    name: claude-code-install
+  claude-bin:
+    name: claude-code-bin

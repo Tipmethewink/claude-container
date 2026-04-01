@@ -207,14 +207,17 @@ RUN echo "trap '' TSTP" >> ${USER_HOME}/.bashrc
 # Give user sudo access (optional - remove for tighter security)
 # RUN echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
+# =============================================================================
+# Entrypoint - installs/updates Claude Code from persistent volume on startup
+# =============================================================================
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 USER $USERNAME
 
-# =============================================================================
-# Install Claude Code (using native installer, as user)
-# =============================================================================
-RUN curl -fsSL https://claude.ai/install.sh | bash
-
 SHELL ["/bin/bash", "-c"]
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 # Default command - start interactive shell
 CMD ["/bin/bash"]
