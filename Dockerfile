@@ -198,6 +198,7 @@ RUN chmod +x /usr/local/bin/init-firewall.sh && \
 # =============================================================================
 RUN mkdir -p ${USER_HOME}/.claude && chown -R $USERNAME:$USERNAME ${USER_HOME}/.claude
 RUN mkdir -p ${USER_HOME}/go && chown -R $USERNAME:$USERNAME ${USER_HOME}/go
+RUN mkdir -p ${USER_HOME}/.local/{bin,share/claude,state} && chown -R $USERNAME:$USERNAME ${USER_HOME}/.local
 
 # Disable Ctrl+Z (SIGTSTP) inside the container - it just suspends the
 # foreground process with nowhere useful to go. Use Docker's detach keys

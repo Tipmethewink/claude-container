@@ -101,8 +101,7 @@ services:
       - /run/pcscd/pcscd.comm:/run/pcscd/pcscd.comm
 
       # Persist Claude Code installation between container rebuilds
-      - claude-install:/home/${CONTAINER_USER:-mark}/.local/share/claude
-      - claude-bin:/home/${CONTAINER_USER:-mark}/.local/bin
+      - claude-local:/home/${CONTAINER_USER:-mark}/.local
 
     # Working directory - same as host
     working_dir: ${PWD}
@@ -126,7 +125,5 @@ volumes:
 #    name: claude-code-config
   claude-history:
     name: claude-code-history
-  claude-install:
-    name: claude-code-install
-  claude-bin:
-    name: claude-code-bin
+  claude-local:
+    name: claude-code-local
