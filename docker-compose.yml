@@ -74,8 +74,8 @@ services:
 
     # Volume mounts
     volumes:
-      # Your project workspace - mount to same path as host
-      - ${PWD}:${PWD}
+      # Your project workspace - PROJECT_ROOT and WORK_DIR set by sclaude function
+      - ${PROJECT_ROOT}:${PROJECT_ROOT}
       - ${HOME}/git/root:${HOME}/git/root
 
       # Persist Claude configuration between container restarts
@@ -103,8 +103,8 @@ services:
       # Persist Claude Code installation between container rebuilds
       - claude-local:/home/${CONTAINER_USER:-mark}/.local
 
-    # Working directory - same as host
-    working_dir: ${PWD}
+    # Working directory - set by sclaude function (defaults to PROJECT_ROOT)
+    working_dir: ${WORK_DIR:-${PROJECT_ROOT}}
 
     userns_mode: host
     
