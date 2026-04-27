@@ -7,13 +7,18 @@
 #   docker compose down         # Stop and remove container
 #
 # Configuration:
-#   CONTAINER_USER - Username inside container (default: mark)
-#   Set in .env file or export before running docker compose
+#   CONTAINER_USER - Username inside container (defaults to host $USER)
+#   HOST_UID      - UID inside container (defaults to 1000; set to $(id -u) to mirror host)
+#   HOST_GID      - GID inside container (defaults to 1000; set to $(id -g) to mirror host)
+#   Set in .env file or export before running docker compose. Example:
+#     export HOST_UID=$(id -u) HOST_GID=$(id -g)
 # =============================================================================
 
-# Default value for container username
-x-container-user: &container-user ${CONTAINER_USER:-mark}
-x-container-home: &container-home /home/${CONTAINER_USER:-mark}
+# Default to the host user running docker compose; override with CONTAINER_USER
+x-container-user: &container-user ${CONTAINER_USER:-${USER}}
+x-container-home: &container-home /home/${CONTAINER_USER:-${USER}}
+x-container-uid:  &container-uid  ${HOST_UID:-1000}
+x-container-gid:  &container-gid  ${HOST_GID:-1000}
 
 services:
   claude:
@@ -25,6 +30,8 @@ services:
         PYTHON_VERSION: ${PYTHON_VERSION:-3.13}
         GO_VERSION: ${GO_VERSION:-1.23.5}
         USERNAME: *container-user
+        USER_UID: *container-uid
+        USER_GID: *container-gid
     
     container_name: claude-code
     hostname: claude-code
@@ -56,14 +63,14 @@ services:
       - GITHUB_TOKEN=${GITHUB_TOKEN:-}
       - GITLAB_TOKEN=${GITLAB_TOKEN:-}
       - NODE_OPTIONS=--max-old-space-size=4096
-      - CLAUDE_CONFIG_DIR=/home/${CONTAINER_USER:-mark}/.claude
+      - CLAUDE_CONFIG_DIR=/home/${CONTAINER_USER:-${USER}}/.claude
       - TZ=${TZ:-UTC}
-      - HOME=/home/${CONTAINER_USER:-mark}
+      - HOME=/home/${CONTAINER_USER:-${USER}}
       - TERM=${TERM:-xterm-256color}
 
       # Get notifications
-      - DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
-      - XDG_RUNTIME_DIR=/run/user/1000
+      - DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/${HOST_UID:-1000}/bus
+      - XDG_RUNTIME_DIR=/run/user/${HOST_UID:-1000}
       - WAYLAND_DISPLAY=${WAYLAND_DISPLAY}
 
       # Host port for accessing host services (e.g. dev servers)
@@ -79,29 +86,29 @@ services:
       - ${HOME}/git/root:${HOME}/git/root
 
       # Persist Claude configuration between container restarts
-      - ${HOME}/.claude:/home/${CONTAINER_USER:-mark}/.claude
+      - ${HOME}/.claude:/home/${CONTAINER_USER:-${USER}}/.claude
 
       # Persist command history
       - claude-history:/commandhistory
 
       # Optional: Mount your SSH keys for git operations (read-only)
-      - ${HOME}/.ssh:/home/${CONTAINER_USER:-mark}/.ssh:ro
+      - ${HOME}/.ssh:/home/${CONTAINER_USER:-${USER}}/.ssh:ro
 
       # Optional: Mount your git config (read-only)
-      - ${HOME}/.gitconfig:/home/${CONTAINER_USER:-mark}/.gitconfig:ro
+      - ${HOME}/.gitconfig:/home/${CONTAINER_USER:-${USER}}/.gitconfig:ro
 
       # Required for notifications
-      - /run/user/1000:/run/user/1000
+      - /run/user/${HOST_UID:-1000}:/run/user/${HOST_UID:-1000}
 
       # Share machine ID to prevent re-onboarding
       - /etc/machine-id:/etc/machine-id:ro
-      - ${XDG_RUNTIME_DIR}/wayland-1:/run/user/1000/wayland-1
+      - ${XDG_RUNTIME_DIR}/wayland-1:/run/user/${HOST_UID:-1000}/wayland-1
 
       # YubiKey: Share host pcscd socket for smart card operations (GPG, PIV)
       - /run/pcscd/pcscd.comm:/run/pcscd/pcscd.comm
 
       # Persist Claude Code installation between container rebuilds
-      - claude-local:/home/${CONTAINER_USER:-mark}/.local
+      - claude-local:/home/${CONTAINER_USER:-${USER}}/.local
 
     # Working directory - set by sclaude function (defaults to PROJECT_ROOT)
     working_dir: ${WORK_DIR:-${PROJECT_ROOT}}

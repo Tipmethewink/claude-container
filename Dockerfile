@@ -152,10 +152,14 @@ ENV USER_HOME=/home/${USERNAME}
 ENV GOPATH="${USER_HOME}/go"
 ENV PATH="${GOPATH}/bin:$PATH"
 
-# Create user (the base image has "node" with UID 1000, so we rename it)
+# Rename the base image's "node" user (UID/GID 1000) to ${USERNAME}, then
+# renumber to ${USER_UID}/${USER_GID} if they differ. usermod -u re-owns
+# files in the user's home dir automatically.
 RUN usermod -l ${USERNAME} node && \
     groupmod -n ${USERNAME} node && \
     usermod -d /home/${USERNAME} -m ${USERNAME} && \
+    if [ "${USER_GID}" != "1000" ]; then groupmod -g ${USER_GID} ${USERNAME}; fi && \
+    if [ "${USER_UID}" != "1000" ]; then usermod -u ${USER_UID} ${USERNAME}; fi && \
     sed -i "s|/home/node|/home/${USERNAME}|g" /etc/passwd
 
 # Persist bash history

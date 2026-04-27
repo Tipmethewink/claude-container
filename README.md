@@ -30,10 +30,58 @@ cd /path/to/your/project
 docker compose -f ~/git/claude-container/docker-compose.yml run claude claude --dangerously-skip-permissions
 ```
 
-You can create a shell alias for convenience:
+For convenience, drop a shell function like this in your `~/.bashrc` /
+`~/.bash_profile`. It sets `PROJECT_ROOT` / `WORK_DIR` for the compose file's
+bind mounts, supports a `--host-port` flag (exposed inside the container as
+`$HOST_PORT` via `host.docker.internal`), and a `--root` flag for mounting a
+parent directory while starting Claude in a subdirectory:
 
 ```bash
-alias claude-docker='docker compose -f ~/git/claude-container/docker-compose.yml run claude claude --dangerously-skip-permissions'
+function sclaude {
+    local host_port_args=()
+    local claude_args=()
+    local project_root=""
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --host-port)
+                host_port_args=(-e "HOST_PORT=$2")
+                shift 2
+                ;;
+            --root)
+                project_root=$(realpath "$2")
+                shift 2
+                ;;
+            *)
+                claude_args+=("$1")
+                shift
+                ;;
+        esac
+    done
+
+    local mount_root="${project_root:-$PWD}"
+
+    if [[ "$PWD" != "$mount_root" && "$PWD" != "$mount_root"/* ]]; then
+        echo "Error: current directory ($PWD) is not under --root ($mount_root)"
+        return 1
+    fi
+
+    PROJECT_ROOT="$mount_root" WORK_DIR="$PWD" \
+        docker compose -f ~/git/claude-container/docker-compose.yml run \
+        --remove-orphans --rm \
+        "${host_port_args[@]}" \
+        claude claude --dangerously-skip-permissions "${claude_args[@]}"
+}
+```
+
+Usage:
+
+```bash
+cd ~/git/myproject
+sclaude                                       # mounts $PWD, starts claude there
+sclaude --host-port 3000                      # exposes a host dev server as $HOST_PORT
+cd ~/git/myproject/subdir
+sclaude --root ~/git/myproject                # mounts the repo root, starts claude in subdir
 ```
 
 ### Option 2: Interactive Container Session
@@ -57,12 +105,12 @@ claude --dangerously-skip-permissions
 # Build the image
 docker build -t claude-code .
 
-# Run interactively
+# Run interactively (replaces $USER with the host username baked into the image)
 docker run -it \
   -v $(pwd):$(pwd) \
   -w $(pwd) \
-  -v ${HOME}/.claude:/home/mark/.claude \
-  -v ${HOME}/.ssh:/home/mark/.ssh:ro \
+  -v ${HOME}/.claude:/home/$USER/.claude \
+  -v ${HOME}/.ssh:/home/$USER/.ssh:ro \
   -e ANTHROPIC_API_KEY="your-key" \
   --cap-add=NET_ADMIN \
   --cap-add=NET_RAW \
@@ -81,7 +129,19 @@ claude --dangerously-skip-permissions
 | `ANTHROPIC_API_KEY` | Your Anthropic API key | (required unless using ~/.claude) |
 | `GITHUB_TOKEN` | GitHub token for `gh` CLI | (optional) |
 | `TZ` | Timezone | `UTC` |
-| `CONTAINER_USER` | Username inside the container | `mark` |
+| `CONTAINER_USER` | Username inside the container | host `$USER` |
+| `HOST_UID` | UID inside the container | `1000` |
+| `HOST_GID` | GID inside the container | `1000` |
+
+To fully mirror the host user (recommended when your host UID/GID is not 1000, so
+that bind-mounted files have correct ownership inside the container):
+
+```bash
+export HOST_UID=$(id -u) HOST_GID=$(id -g)
+docker compose -f ~/git/claude-container/docker-compose.yml build
+```
+
+Or place them in a `.env` file next to `docker-compose.yml`.
 
 ### Build Arguments
 
@@ -215,10 +275,12 @@ volumes:
 ## Troubleshooting
 
 ### "Permission denied" errors
-The container runs as the configured user (default: `mark`). Ensure file permissions match:
+The container runs as `$CONTAINER_USER` (defaults to the host `$USER`) with UID/GID
+`$HOST_UID`/`$HOST_GID` (both default to `1000`). If your host UID/GID isn't 1000,
+rebuild the image with matching values so bind-mounted files are writable:
 ```bash
-# Files should be owned by your host user (UID 1000)
-ls -la /path/to/project
+export HOST_UID=$(id -u) HOST_GID=$(id -g)
+docker compose -f ~/git/claude-container/docker-compose.yml build
 ```
 
 ### Firewall blocking needed domains
